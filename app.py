@@ -7,7 +7,6 @@ import os
 
 app = Flask(__name__)
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
 def calculate_adjustment(dB, target_dB):
     adjustment = target_dB - dB
     return round(max(-16, min(6, adjustment)), 0)
