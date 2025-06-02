@@ -2,7 +2,6 @@ from flask import Flask, request, render_template_string
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
-import openai
 import os
 
 
@@ -62,28 +61,6 @@ def generate_eq_settings_logspaced(df, target_dB, num_bands=10):
 
     return eq_settings
     
-def ask_chatgpt_eq(freq_db_data, target_dB):
-    prompt = (
-        "Given this frequency response data:\n"
-        + "\n".join([f"{freq} Hz: {dB} dB" for freq, dB in freq_db_data])
-        + f"\n\nTarget dB: {target_dB}\n"
-        "Generate 10 EQ band settings in the format: Frequency (Hz), Gain/Cut (dB),"
-        " spaced out reasonably and only applying gain/cut within ±16 dB.\n"
-    )
-
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # or "gpt-3.5-turbo"
-            messages=[
-                {"role": "system", "content": "You are a signal processing expert."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.2
-        )
-        return response.choices[0].message["content"].strip()
-    except Exception as e:
-        return f"ChatGPT Error: {e}"
-
 
 def format_eq_settings(eq_settings, title):
     lines = [f"{title}", f"{'Frequency (Hz)':<15}{'Gain/Cut (dB)':<15}", "-" * 30]
@@ -113,13 +90,11 @@ def index():
                 eq1 = generate_eq_settings(df, target_dB)
                 eq2 = generate_eq_settings_kmeans(df, target_dB)
                 eq3 = generate_eq_settings_logspaced(df, target_dB)
-                chatgpt_eq = ask_chatgpt_eq_eq([(row["Frequency"], row["dB"]) for _, row in df.iterrows()], target_dB)
 
                 output_text = "\n\n".join([
                     format_eq_settings(eq1, "EQ Settings - Highest to lowest"),
                     format_eq_settings(eq2, "EQ Settings - KMeans-Based"),
                     format_eq_settings(eq3, "EQ Settings - Log-Spaced Frequencies"),
-                    "EQ Settings - ChatGPT-Based\n" + chatgpt_eq
                 ])
             except Exception as e:
                 output_text = f"Error processing data: {e}"
